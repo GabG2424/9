@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FocusFlow — Study Timer</title>
+<style>
+:root {
+  --bg: #0c1020;
+  --panel: rgba(24, 31, 56, .88);
+  --panel2: rgba(33, 42, 72, .72);
+  --text: #f5f7ff;
+  --muted: #a7b0cf;
+  --accent: #8b7cff;
+  --accent2: #53e0c0;
+  --border: rgba(255,255,255,.09);
+  --shadow: 0 22px 70px rgba(0,0,0,.28);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; min-height: 100vh; color: var(--text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
+  background:
+    radial-gradient(ellipse at 15% 10%, rgba(105,91,255,.22), transparent 38%),
+    radial-gradient(ellipse at 90% 80%, rgba(35,204,174,.12), transparent 35%), var(--bg);
+  display: flex; justify-content: center; padding: 30px 16px;
+}
+.app { width: 100%; max-width: 1060px; }
+header { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:28px; }
+.brand { display:flex; align-items:center; gap:12px; }
+.logo { width:44px; height:44px; display:grid; place-items:center; border-radius:14px; background:linear-gradient(135deg,var(--accent),#5a9cff); font-size:22px; box-shadow:0 8px 24px #6558df55; }
+h1 { font-size:21px; margin:0; letter-spacing:-.5px; }
+.brand p { margin:3px 0 0; color:var(--muted); font-size:12px; }
+.date { color:var(--muted); font-size:13px; text-align:right; }
+.intro { margin-bottom:22px; }
+.eyebrow { color:var(--accent2); text-transform:uppercase; font-size:11px; font-weight:800; letter-spacing:2px; }
+h2 { font-size:clamp(25px,4vw,35px); letter-spacing:-1px; margin:8px 0 7px; }
+.intro p { color:var(--muted); margin:0; font-size:14px; }
+.layout { display:grid; grid-template-columns:1.15fr .85fr; gap:18px; }
+.panel { background:var(--panel); border:1px solid var(--border); border-radius:24px; box-shadow:var(--shadow); padding:24px; backdrop-filter:blur(16px); }
+.mode-tabs { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; background:#0d1326; padding:6px; border-radius:14px; margin-bottom:24px; }
+.mode { border:0; color:var(--muted); background:transparent; border-radius:10px; padding:11px 6px; font-size:12px; font-weight:700; cursor:pointer; transition:.2s; }
+.mode.active { background:var(--panel2); color:var(--text); box-shadow:inset 0 0 0 1px var(--border); }
+.timer-wrap { display:flex; justify-content:center; margin:8px 0 20px; }
+.timer-ring { width:min(290px,72vw); aspect-ratio:1; border-radius:50%; display:grid; place-items:center; position:relative; background:conic-gradient(var(--accent) var(--progress, 100%), #252d4a 0); transition:background .25s; }
+.timer-ring::before { content:""; position:absolute; inset:10px; border-radius:50%; background:linear-gradient(145deg,#171e38,#10162b); box-shadow:inset 0 0 30px #0004; }
+.timer-content { position:relative; text-align:center; }
+.timer-label { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:2px; }
+.time { font-size:clamp(42px,7vw,58px); font-weight:750; letter-spacing:-2px; font-variant-numeric:tabular-nums; margin:8px 0; }
+.status { color:var(--accent2); font-size:12px; }
+.controls { display:flex; justify-content:center; gap:10px; flex-wrap:wrap; }
+button { font:inherit; }
+.primary,.secondary { cursor:pointer; border:1px solid transparent; border-radius:13px; padding:13px 21px; font-size:13px; font-weight:800; transition:transform .15s,filter .15s; }
+button:hover { filter:brightness(1.1); transform:translateY(-1px); }
+button:focus-visible,input:focus-visible { outline:2px solid var(--accent2); outline-offset:3px; }
+.primary { color:white; background:linear-gradient(135deg,var(--accent),#6b67e8); min-width:132px; box-shadow:0 8px 22px #7466e533; }
+.secondary { color:var(--text); background:var(--panel2); border-color:var(--border); }
+.note { text-align:center; color:var(--muted); font-size:11px; margin:17px 0 0; }
+.side { display:flex; flex-direction:column; gap:18px; }
+.section-title { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:0 0 18px; font-size:15px; }
+.pill { color:var(--accent2); background:#53e0c015; border:1px solid #53e0c033; padding:5px 9px; border-radius:999px; font-size:10px; font-weight:800; }
+.field-label { display:block; color:var(--muted); font-size:12px; margin-bottom:8px; }
+input[type="number"], input[type="text"] { width:100%; border:1px solid var(--border); background:#0d1428; color:var(--text); border-radius:11px; padding:12px; outline:none; }
+input[type="number"]:focus,input[type="text"]:focus { border-color:var(--accent); }
+.custom-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.setting { margin-bottom:15px; }
+.stats { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.stat { background:var(--panel2); border:1px solid var(--border); border-radius:15px; padding:15px; }
+.stat-icon { font-size:18px; }
+.stat-value { font-size:24px; font-weight:800; margin:9px 0 3px; letter-spacing:-.5px; }
+.stat-label { color:var(--muted); font-size:11px; }
+.progress-head { display:flex; justify-content:space-between; color:var(--muted); font-size:11px; margin:18px 0 8px; }
+.progress { height:7px; background:#0c1326; border-radius:99px; overflow:hidden; }
+.progress-fill { height:100%; width:0; background:linear-gradient(90deg,var(--accent),var(--accent2)); border-radius:99px; transition:width .3s; }
+.task-row { display:flex; gap:8px; }
+.task-row input { flex:1; min-width:0; }
+.add { border:0; border-radius:11px; background:var(--accent); color:white; padding:0 14px; font-weight:800; cursor:pointer; }
+.task-list { list-style:none; padding:0; margin:12px 0 0; display:flex; flex-direction:column; gap:8px; }
+.task { display:flex; align-items:center; gap:9px; background:var(--panel2); border:1px solid var(--border); border-radius:11px; padding:10px; font-size:12px; }
+.task input { accent-color:var(--accent2); }
+.task span { flex:1; overflow-wrap:anywhere; }
+.task.done span { color:var(--muted); text-decoration:line-through; }
+.remove { color:var(--muted); background:transparent; border:0; cursor:pointer; font-size:17px; padding:0 4px; }
+.empty { color:var(--muted); font-size:12px; padding:8px 2px; }
+footer { color:#7e88aa; text-align:center; font-size:11px; margin:22px 0 0; }
+@media(max-width:760px) { .layout {grid-template-columns:1fr;} .panel {padding:20px;} header {align-items:flex-start;} .date {max-width:130px; line-height:1.5;} }
+@media(prefers-reduced-motion:reduce) { *,*::before,*::after {transition:none!important;} }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand"><div class="logo">✦</div><div><h1>FocusFlow</h1><p>Your little space to focus</p></div></div>
+    <div class="date" id="today"></div>
+  </header>
+
+  <section class="intro">
+    <div class="eyebrow">One thing at a time</div>
+    <h2>Make today count.</h2>
+    <p>Small focus sessions. Real progress. Take it one step at a time.</p>
+  </section>
+
+  <main class="layout">
+    <section class="panel">
+      <div class="mode-tabs" role="tablist" aria-label="Timer mode">
+        <button class="mode active" data-mode="pomodoro" role="tab" aria-selected="true">Pomodoro</button>
+        <button class="mode" data-mode="short" role="tab" aria-selected="false">Short break</button>
+        <button class="mode" data-mode="long" role="tab" aria-selected="false">Long break</button>
+      </div>
+      <div class="timer-wrap">
+        <div class="timer-ring" id="ring" style="--progress:100%">
+          <div class="timer-content">
+            <div class="timer-label" id="timerLabel">Focus time</div>
+            <div class="time" id="time" aria-live="off">25:00</div>
+            <div class="status" id="status" aria-live="polite">Ready when you are</div>
+          </div>
+        </div>
+      </div>
+      <div class="controls">
+        <button class="primary" id="startBtn">▶ Start focus</button>
+        <button class="secondary" id="resetBtn">↺ Reset</button>
+      </div>
+      <p class="note">Tip: silence notifications and choose one small goal.</p>
+    </section>
+
+    <div class="side">
+      <section class="panel">
+        <h3 class="section-title">Your progress <span class="pill">KEEP GOING</span></h3>
+        <div class="stats">
+          <div class="stat"><div class="stat-icon">⚡</div><div class="stat-value" id="sessions">0</div><div class="stat-label">Focus sessions</div></div>
+          <div class="stat"><div class="stat-icon">◷</div><div class="stat-value" id="minutes">0</div><div class="stat-label">Minutes focused</div></div>
+        </div>
+        <div class="progress-head"><span>Daily focus goal</span><span id="goalText">0 / 120 min</span></div>
+        <div class="progress"><div class="progress-fill" id="goalBar"></div></div>
+      </section>
+
+      <section class="panel">
+        <h3 class="section-title">Customize timer <span class="pill">YOUR PACE</span></h3>
+        <div class="custom-row">
+          <div class="setting"><label class="field-label" for="studyMins">Study (minutes)</label><input id="studyMins" type="number" min="1" max="180" value="25"></div>
+          <div class="setting"><label class="field-label" for="breakMins">Short break (min)</label><input id="breakMins" type="number" min="1" max="60" value="5"></div>
+        </div>
+        <div class="setting"><label class="field-label" for="goalMins">Daily focus goal (minutes)</label><input id="goalMins" type="number" min="1" max="1440" value="120"></div>
+        <button class="secondary" id="applyBtn" style="width:100%">Apply settings</button>
+      </section>
+
+      <section class="panel">
+        <h3 class="section-title">Study checklist <span class="pill" id="taskCount">0 DONE</span></h3>
+        <form class="task-row" id="taskForm">
+          <input id="taskInput" type="text" maxlength="100" placeholder="e.g. Review networking notes" aria-label="New study task">
+          <button class="add" type="submit" aria-label="Add task">+</button>
+        </form>
+        <ul class="task-list" id="taskList"><li class="empty">Add one small task to get started.</li></ul>
+      </section>
+    </div>
+  </main>
+  <footer>Built for calmer, more focused study sessions ✦</footer>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const defaults = { pomodoro: 25, short: 5, long: 15 };
+  let mode = 'pomodoro';
+  let total = defaults.pomodoro * 60;
+  let remaining = total;
+  let interval = null;
+  let endAt = 0;
+  let sessions = 0;
+  let focusedMinutes = 0;
+  let tasks = [];
+  let audioContext = null;
+
+  $('today').textContent = new Date().toLocaleDateString(undefined, { weekday:'short', month:'short', day:'numeric' });
+
+  function format(seconds) {
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const s = Math.floor(seconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  }
+  function render() {
+    $('time').textContent = format(remaining);
+    $('ring').style.setProperty('--progress', `${total ? (remaining / total) * 100 : 0}%`);
+    $('timerLabel').textContent = mode === 'pomodoro' ? 'Focus time' : mode === 'short' ? 'Short break' : 'Long break';
+    $('startBtn').textContent = interval ? 'Ⅱ Pause' : (remaining === 0 ? '↻ Start again' : remaining < total ? '▶ Resume' : '▶ Start focus');
+    $('status').textContent = interval ? 'You’re in the zone…' : remaining === 0 ? 'Session complete!' : remaining < total ? 'Paused — take your time' : 'Ready when you are';
+    $('sessions').textContent = sessions;
+    $('minutes').textContent = focusedMinutes;
+    const goal = Math.max(1, Number($('goalMins').value) || 120);
+    $('goalText').textContent = `${focusedMinutes} / ${goal} min`;
+    $('goalBar').style.width = `${Math.min(100, focusedMinutes / goal * 100)}%`;
+    document.title = `${format(remaining)} — FocusFlow`;
+    document.querySelectorAll('.mode').forEach(btn => {
+      const active = btn.dataset.mode === mode;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-selected', String(active));
+    });
+    $('taskCount').textContent = `${tasks.filter(t => t.done).length} DONE`;
+  }
+  function stop() {
+    if (interval) clearInterval(interval);
+    interval = null;
+  }
+  function beep() {
+    try {
+      audioContext = audioContext || new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      osc.connect(gain); gain.connect(audioContext.destination);
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.12, audioContext.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.65);
+      osc.start(); osc.stop(audioContext.currentTime + 0.65);
+    } catch (e) {}
+  }
+  function complete() {
+    stop();
+    remaining = 0;
+    if (mode === 'pomodoro') { sessions++; focusedMinutes += total / 60; }
+    beep();
+    render();
+    $('status').textContent = mode === 'pomodoro' ? 'Focus complete — enjoy a break!' : 'Break finished — you’ve got this!';
+    $('startBtn').textContent = '↻ Start again';
+  }
+  function tick() {
+    remaining = Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
+    if (remaining <= 0) complete();
+    else render();
+  }
+  function start() {
+    if (interval) { stop(); remaining = Math.max(0, Math.ceil((endAt - Date.now()) / 1000)); render(); return; }
+    if (remaining <= 0) remaining = total;
+    endAt = Date.now() + remaining * 1000;
+    interval = setInterval(tick, 250);
+    render();
+  }
+  function setMode(nextMode) {
+    stop();
+    mode = nextMode;
+    total = defaults[mode] * 60;
+    remaining = total;
+    render();
+  }
+  $('startBtn').addEventListener('click', start);
+  $('resetBtn').addEventListener('click', () => { stop(); remaining = total; render(); });
+  document.querySelectorAll('.mode').forEach(btn => btn.addEventListener('click', () => setMode(btn.dataset.mode)));
+  $('applyBtn').addEventListener('click', () => {
+    stop();
+    const study = Math.min(180, Math.max(1, Number($('studyMins').value) || 25));
+    const short = Math.min(60, Math.max(1, Number($('breakMins').value) || 5));
+    $('studyMins').value = study; $('breakMins').value = short;
+    defaults.pomodoro = study; defaults.short = short;
+    total = defaults[mode] * 60; remaining = total;
+    render();
+  });
+  $('goalMins').addEventListener('change', render);
+  $('taskForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const value = $('taskInput').value.trim();
+    if (!value) return;
+    tasks.push({ id: Date.now() + Math.random(), text: value, done: false });
+    $('taskInput').value = '';
+    renderTasks();
+  });
+  function renderTasks() {
+    const list = $('taskList');
+    list.innerHTML = '';
+    if (!tasks.length) {
+      const li = document.createElement('li'); li.className = 'empty'; li.textContent = 'Add one small task to get started.'; list.appendChild(li); render(); return;
+    }
+    tasks.forEach(task => {
+      const li = document.createElement('li'); li.className = `task${task.done ? ' done' : ''}`;
+      const check = document.createElement('input'); check.type = 'checkbox'; check.checked = task.done; check.setAttribute('aria-label', `Mark ${task.text} complete`);
+      check.addEventListener('change', () => { task.done = check.checked; renderTasks(); });
+      const span = document.createElement('span'); span.textContent = task.text;
+      const remove = document.createElement('button'); remove.className = 'remove'; remove.type = 'button'; remove.textContent = '×'; remove.setAttribute('aria-label', `Remove ${task.text}`);
+      remove.addEventListener('click', () => { tasks = tasks.filter(t => t.id !== task.id); renderTasks(); });
+      li.append(check, span, remove); list.appendChild(li);
+    });
+    render();
+  }
+  render(); renderTasks();
+})();
+</script>
+</body>
+</html>
